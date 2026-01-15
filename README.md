@@ -57,3 +57,29 @@ Yes, you can select from multiple standard calculation methods in the plugin set
 2. Install the "PHP Debug" extension.
 3. Make sure Xdebug is enabled in your PHP container.
 4. Use the launch configurations in `.vscode/launch.json` to start debugging.
+
+!IMPORTANT: Create the Table Manually via phpMyAdmin
+If import fails.
+
+1. Go to phpMyAdmin
+2. Select your WordPress database
+3. Click "SQL" tab
+4. Paste this SQL and click "Go / ctrl + enter":
+
+CREATE TABLE wp_muslprti_iqama_times (
+    day date NOT NULL,
+    fajr_athan time DEFAULT NULL,
+    fajr_iqama time DEFAULT NULL,
+    sunrise time DEFAULT NULL,
+    dhuhr_athan time DEFAULT NULL,
+    dhuhr_iqama time DEFAULT NULL,
+    asr_athan time DEFAULT NULL,
+    asr_iqama time DEFAULT NULL,
+    maghrib_athan time DEFAULT NULL,
+    maghrib_iqama time DEFAULT NULL,
+    isha_athan time DEFAULT NULL,
+    isha_iqama time DEFAULT NULL,
+    created_at datetime DEFAULT CURRENT_TIMESTAMP,
+    updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
