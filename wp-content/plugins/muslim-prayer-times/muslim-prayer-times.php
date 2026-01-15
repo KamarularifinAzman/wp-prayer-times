@@ -57,28 +57,67 @@ function muslprti_plugin_activate() {
     $table_name = $wpdb->prefix . MUSLPRTI_IQAMA_TABLE;
     $charset_collate = $wpdb->get_charset_collate();
     
-    // SQL to create the iqama times table
-    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
-        day date NOT NULL,
-        fajr_athan time DEFAULT NULL,
-        fajr_iqama time DEFAULT NULL,
-        sunrise time DEFAULT NULL,
-        dhuhr_athan time DEFAULT NULL,
-        dhuhr_iqama time DEFAULT NULL,
-        asr_athan time DEFAULT NULL,
-        asr_iqama time DEFAULT NULL,
-        maghrib_athan time DEFAULT NULL,
-        maghrib_iqama time DEFAULT NULL,
-        isha_athan time DEFAULT NULL,
-        isha_iqama time DEFAULT NULL,
-        created_at datetime DEFAULT CURRENT_TIMESTAMP,
-        updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (day)
+    // First, try to create with direct SQL if dbDelta fails
+    $sql_direct = "CREATE TABLE IF NOT EXISTS `$table_name` (
+        `day` date NOT NULL,
+        `fajr_athan` time DEFAULT NULL,
+        `fajr_iqama` time DEFAULT NULL,
+        `sunrise` time DEFAULT NULL,
+        `dhuhr_athan` time DEFAULT NULL,
+        `dhuhr_iqama` time DEFAULT NULL,
+        `asr_athan` time DEFAULT NULL,
+        `asr_iqama` time DEFAULT NULL,
+        `maghrib_athan` time DEFAULT NULL,
+        `maghrib_iqama` time DEFAULT NULL,
+        `isha_athan` time DEFAULT NULL,
+        `isha_iqama` time DEFAULT NULL,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`day`)
     ) $charset_collate;";
     
-    // Execute the SQL using dbDelta() for safe table creation
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    // Try direct execution first
+    $wpdb->query($sql_direct);
+    
+    // Verify table was created
+    $table_check = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+    
+    if ($table_check === $table_name) {
+        error_log('Muslim Prayer Times: Successfully created table ' . $table_name);
+        update_option('muslprti_db_version', MUSLPRTI_DB_VERSION);
+    } else {
+        // If direct SQL failed, try dbDelta as fallback
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        
+        $sql = "CREATE TABLE $table_name (
+            day date NOT NULL,
+            fajr_athan time DEFAULT NULL,
+            fajr_iqama time DEFAULT NULL,
+            sunrise time DEFAULT NULL,
+            dhuhr_athan time DEFAULT NULL,
+            dhuhr_iqama time DEFAULT NULL,
+            asr_athan time DEFAULT NULL,
+            asr_iqama time DEFAULT NULL,
+            maghrib_athan time DEFAULT NULL,
+            maghrib_iqama time DEFAULT NULL,
+            isha_athan time DEFAULT NULL,
+            isha_iqama time DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (day)
+        ) $charset_collate;";
+        
+        dbDelta($sql);
+        
+        // Check again
+        $table_check2 = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
+        if ($table_check2 === $table_name) {
+            error_log('Muslim Prayer Times: Created table via dbDelta: ' . $table_name);
+            update_option('muslprti_db_version', MUSLPRTI_DB_VERSION);
+        } else {
+            error_log('Muslim Prayer Times: FAILED to create table ' . $table_name . '. Error: ' . $wpdb->last_error);
+        }
+    }
 }
 
 // Admin notice for missing dependencies
